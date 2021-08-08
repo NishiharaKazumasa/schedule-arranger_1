@@ -6,6 +6,7 @@ var logger = require('morgan');
 var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
+
 // モデルの読み込み
 var User = require('./models/user');
 var Schedule = require('./models/schedule');
@@ -13,13 +14,13 @@ var Availability = require('./models/availability');
 var Candidate = require('./models/candidate');
 var Comment = require('./models/comment');
 User.sync().then(() => {
-  Schedule.belongsTo(User, { foreignKey: 'createdBy' });
+  Schedule.belongsTo(User, {foreignKey: 'createdBy'});
   Schedule.sync();
-  Comment.belongsTo(User, { foreignKey: 'userId' });
+  Comment.belongsTo(User, {foreignKey: 'userId'});
   Comment.sync();
-  Availability.belongsTo(User, { foreignKey: 'userId' });
+  Availability.belongsTo(User, {foreignKey: 'userId'});
   Candidate.sync().then(() => {
-    Availability.belongsTo(Candidate, { foreignKey: 'candidateId' });
+    Availability.belongsTo(Candidate, {foreignKey: 'candidateId'});
     Availability.sync();
   });
 });
@@ -94,7 +95,15 @@ app.get('/auth/github',
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   function (req, res) {
-    res.redirect('/');
+    var loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom &&
+      loginFrom.startsWith('/')) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }
   });
 
 // catch 404 and forward to error handler
